@@ -1,3 +1,4 @@
+![1](https://user-images.githubusercontent.com/82914483/120650389-08f30600-c47e-11eb-8cc1-84b427dfed87.jpg)
 # OSSM
 
 This is my first "ok"-working sketch for the OSSM from Kinkymakers.
