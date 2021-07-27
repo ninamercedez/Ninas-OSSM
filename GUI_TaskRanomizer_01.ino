@@ -3,14 +3,10 @@ void hold(int _posIn=0, int _posOut=0, int _accIn=0, int _velIn=0, int _accOut=0
 void paus(int _time=1000); //Dummy
 void stepchain(int _preptime = 0, int _amount=1, int _posIn=0, int _posOut=0, int _accIn=0, int _accOut=0, int _velIn=0,  int _velOut=0,  int _pauseIn=0, int _pauseOut=0); //Dummy
 
-// How to PrePare the cmdfile
-// TaskIdentifier | preptime | amount | posin | posout | accin | accout | velin | velout | pausein | pauseout | Message | Tipp
-// 
-
 
 //#############################################################################
-#define SECRET_SSID "Internet"
-#define SECRET_PASS "F-jAm-Dzj-0QJREl}cUE|31W(pN\"L3:\"3{\"ckwyW{b>u,x4gI[SL;.cRle+HK+%"
+#define SECRET_SSID "YOUR_SSID"
+#define SECRET_PASS "YOUR_PW"
 
 #define pinPul 16
 #define pinDir 17
