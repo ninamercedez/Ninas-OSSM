@@ -2,8 +2,8 @@
 void stepchain(int _preptime = 0, int _amount = 1, int _posIn = 0, int _posOut = 0, int _accIn = 0, int _accOut = 0, int _velIn = 0,  int _velOut = 0,  int _pauseIn = 0, int _pauseOut = 0);
 
 //#############################################################################
-#define SECRET_SSID "AddYourSSID"
-#define SECRET_PASS "AddYourPW"
+#define SECRET_SSID "Internet"
+#define SECRET_PASS "F-jAm-Dzj-0QJREl}cUE|31W(pN\"L3:\"3{\"ckwyW{b>u,x4gI[SL;.cRle+HK+%"
 
 #define pinPul 16
 #define pinDir 17
@@ -118,6 +118,7 @@ bool flag_statuson = false;
 bool flag_hold = false;
 bool flag_thrust = false;
 bool flag_paus = false;
+bool lastTaskHeavy = false;
 
 // Global Variables - Stepchain
 bool stepchain_busy = false;
@@ -341,12 +342,19 @@ struct command task_hold(bool _heavy){
   if (_heavy){
     posin_dice = random(5, 7);
     posout_dice = random(1, posin_dice);
-    taskcmd.cmd_preptime = timesPreptime;
+    if (lastTaskHeavy){
+      taskcmd.cmd_preptime = 0;
+    }
+    else {
+      taskcmd.cmd_preptime = timesPreptime;  
+    }
+    lastTaskHeavy = true;
   }
   else {
     posin_dice = random(1, 5);
     posout_dice = random(1, posin_dice);
     taskcmd.cmd_preptime = 0;
+    lastTaskHeavy = false;
   }
   taskcmd.cmd_amount = 1;
   switch (posin_dice) { //cmd_posin
@@ -406,12 +414,19 @@ struct command task_thrust(bool _heavy){
   if (_heavy){
     posin_dice = random(5, 7);
     posout_dice = random(1, posin_dice);
-    taskcmd.cmd_preptime = timesPreptime;
+    if (lastTaskHeavy){
+      taskcmd.cmd_preptime = 0;
+    }
+    else {
+      taskcmd.cmd_preptime = timesPreptime;  
+    }
+    lastTaskHeavy = true;
   }
   else {
     posin_dice = random(3, 5);
     posout_dice = random(1, posin_dice);
     taskcmd.cmd_preptime = 0;
+    lastTaskHeavy = false;
   } 
   taskcmd.cmd_amount = random(timesThrustMin, timesThrustMax+1);
   switch (posin_dice) { //cmd_posin
