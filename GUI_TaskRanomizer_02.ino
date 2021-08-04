@@ -2,8 +2,8 @@
 void stepchain(int _preptime = 0, int _amount = 1, int _posIn = 0, int _posOut = 0, int _accIn = 0, int _accOut = 0, int _velIn = 0,  int _velOut = 0,  int _pauseIn = 0, int _pauseOut = 0);
 
 //#############################################################################
-#define SECRET_SSID "add_your_ssid"
-#define SECRET_PASS "add_your_pw"
+#define SECRET_SSID "AddYourSSID"
+#define SECRET_PASS "AddYourPW"
 
 #define pinPul 16
 #define pinDir 17
@@ -46,6 +46,12 @@ int TimerLabelId;
 int PrevTaskLabelId;
 int tasknumber = 1;
 
+uint16_t tab1;
+uint16_t tab2;
+uint16_t tab3;
+uint16_t tab4;
+uint16_t tab5;
+
 uint16_t pos1LabelId;
 uint16_t pos2LabelId;
 uint16_t pos3LabelId;
@@ -61,6 +67,14 @@ uint16_t speedHoldInMaxLabelId;
 uint16_t speedHoldOutMaxLabelId;
 uint16_t speedThrustInMaxLabelId;
 uint16_t speedThrustOutMaxLabelId;
+
+uint16_t timesPreptimeLabelId;
+uint16_t timesPauseMinLabelId;
+uint16_t timesHoldMinLabelId;
+uint16_t timesThrustMinLabelId;
+uint16_t timesPauseMaxLabelId;
+uint16_t timesHoldMaxLabelId;
+uint16_t timesThrustMaxLabelId;
 
 uint16_t probabilityPauseLabelId;
 uint16_t probabilityHeavyLabelId;
@@ -85,6 +99,13 @@ int speedThrustInMax = 400;
 int speedThrustOutMax = 400;
 
 // Global Variables - Times
+int timesPreptime = 5;
+int timesPauseMin = 5;
+int timesHoldMin = 5;
+int timesThrustMin = 10;
+int timesPauseMax = 15;
+int timesHoldMax = 15;
+int timesThrustMax = 30;
 
 // Global Variables - Probability
 int prob_pause = 30;
@@ -235,6 +256,40 @@ void numberCall_speedThrustOutMax( Control* sender, int type ) {
 
 //#############################################################################
 //ESP Callbacks - Settings - Times
+void numberCall_timesPreptime( Control* sender, int type ) {
+  Serial.print("Preptime: "); Serial.println( sender->value );
+  timesPreptime = (sender->value).toInt();
+}
+
+void numberCall_timesPauseMin( Control* sender, int type ) {
+  Serial.print("timesPauseMin: "); Serial.println( sender->value );
+  timesPauseMin = (sender->value).toInt();
+}
+
+void numberCall_timesHoldMin( Control* sender, int type ) {
+  Serial.print("timesHoldMin: "); Serial.println( sender->value );
+  timesHoldMin = (sender->value).toInt();
+}
+
+void numberCall_timesThrustMin( Control* sender, int type ) {
+  Serial.print("timesThrustMin: "); Serial.println( sender->value );
+  timesThrustMin = (sender->value).toInt();
+}
+
+void numberCall_timesPauseMax( Control* sender, int type ) {
+  Serial.print("timesPauseMax: "); Serial.println( sender->value );
+  timesPauseMax = (sender->value).toInt();
+}
+
+void numberCall_timesHoldMax( Control* sender, int type ) {
+  Serial.print("timesHoldMax: "); Serial.println( sender->value );
+  timesHoldMax = (sender->value).toInt();
+}
+
+void numberCall_timesThrustMax( Control* sender, int type ) {
+  Serial.print("timesThrustMax: "); Serial.println( sender->value );
+  timesThrustMax = (sender->value).toInt();
+}
 
 //#############################################################################
 //ESP Callbacks - Settings - Probability
@@ -253,9 +308,7 @@ void numberCall_probHold( Control* sender, int type ) {
   prob_hold = (sender->value).toInt();
 }
 
-
 //#############################################################################
-
 struct command task_pause(){
   struct command taskcmd;
   
@@ -269,10 +322,10 @@ struct command task_pause(){
   taskcmd.cmd_velin = 0;
   taskcmd.cmd_velout = 0;
   taskcmd.cmd_pausein = 0;
-  taskcmd.cmd_pauseout = random(5, 11);
+  taskcmd.cmd_pauseout = random(timesPauseMin, timesPauseMax+1);
   taskcmd.cmd_message = "Pause for " + String(taskcmd.cmd_pauseout);
   taskcmd.cmd_hint = "Catch your breath";
-
+  
   return taskcmd;
 }
 
@@ -288,7 +341,7 @@ struct command task_hold(bool _heavy){
   if (_heavy){
     posin_dice = random(5, 7);
     posout_dice = random(1, posin_dice);
-    taskcmd.cmd_preptime = 5;
+    taskcmd.cmd_preptime = timesPreptime;
   }
   else {
     posin_dice = random(1, 5);
@@ -330,9 +383,9 @@ struct command task_hold(bool _heavy){
   taskcmd.cmd_posout = 0;
   taskcmd.cmd_accin = 5000;
   taskcmd.cmd_accout = 5000;
-  taskcmd.cmd_velin = random(speedHoldInMin, speedHoldInMax);
-  taskcmd.cmd_velout = random(speedHoldOutMin, speedHoldOutMax);
-  taskcmd.cmd_pausein = random(5, 16);
+  taskcmd.cmd_velin = random(speedHoldInMin, speedHoldInMax+1);
+  taskcmd.cmd_velout = random(speedHoldOutMin, speedHoldOutMax+1);
+  taskcmd.cmd_pausein = random(timesHoldMin, timesHoldMax+1);
   taskcmd.cmd_pauseout = 0;
   taskcmd.cmd_message = message + String(taskcmd.cmd_pausein) + " Seconds" ;
   taskcmd.cmd_hint = "No Air";
@@ -353,14 +406,14 @@ struct command task_thrust(bool _heavy){
   if (_heavy){
     posin_dice = random(5, 7);
     posout_dice = random(1, posin_dice);
-    taskcmd.cmd_preptime = 5;
+    taskcmd.cmd_preptime = timesPreptime;
   }
   else {
     posin_dice = random(3, 5);
     posout_dice = random(1, posin_dice);
     taskcmd.cmd_preptime = 0;
   } 
-  taskcmd.cmd_amount = random(5, 16);
+  taskcmd.cmd_amount = random(timesThrustMin, timesThrustMax+1);
   switch (posin_dice) { //cmd_posin
     case 1:
       taskcmd.cmd_posin = posGap;
@@ -423,10 +476,10 @@ struct command task_thrust(bool _heavy){
       str_posout = "";
       break;
   }
-  taskcmd.cmd_accin = 10000;
-  taskcmd.cmd_accout = 10000;
-  taskcmd.cmd_velin = random(speedThrustInMin, speedThrustInMax);
-  taskcmd.cmd_velout = random(speedThrustOutMin, speedThrustOutMax);
+  taskcmd.cmd_accin = 8000;
+  taskcmd.cmd_accout = 8000;
+  taskcmd.cmd_velin = random(speedThrustInMin, speedThrustInMax+1);
+  taskcmd.cmd_velout = random(speedThrustOutMin, speedThrustOutMax+1);
   taskcmd.cmd_pausein = 0;
   taskcmd.cmd_pauseout = 0;
   taskcmd.cmd_message = "Suck it from " + str_posout + str_posin + " for " + String(taskcmd.cmd_amount) + " Times" ;
@@ -521,7 +574,7 @@ void taskHandler() {
 void start() {
   digitalWrite(pinEnb, LOW);
   flag_statuson = true;
-  tasknumber = 1;
+  //tasknumber = 1;
   ESPUI.print(ProgramLabelId, String(tasknumber));
   activecommand = randomizeTask();
   printTask();
@@ -538,6 +591,8 @@ void stopp() {
   stepchain_busy = false;
   stp = 0;
   ESPUI.print(CurrentTaskLabelId, "- - -");
+  //ESPUI.print(ProgramLabelId, "- - -");
+  ESPUI.print(TimerLabelId, "- - -");
 }
 
 void nextTask() {
@@ -726,7 +781,6 @@ void stepchain(int _preptime, int _amount, int _posIn, int _posOut, int _accIn, 
 }
 
 //#############################################################################
-
 void setup(void) {
   //just for debugging
   Serial.begin(115200);
@@ -756,11 +810,11 @@ void setup(void) {
   // ESPUI stuff
   ESPUI.setVerbosity(Verbosity::Quiet);
 
-  uint16_t tab1 = ESPUI.addControl( ControlType::Tab, "Main", "Main" );
-  uint16_t tab2 = ESPUI.addControl( ControlType::Tab, "Settings", "Settings - Position" );
-  uint16_t tab3 = ESPUI.addControl( ControlType::Tab, "Settings", "Settings - Speed" );
-  uint16_t tab4 = ESPUI.addControl( ControlType::Tab, "Settings", "Settings - Times" );
-  uint16_t tab5 = ESPUI.addControl( ControlType::Tab, "Settings", "Settings - Probability" );
+  tab1 = ESPUI.addControl( ControlType::Tab, "Main", "Main" );
+  tab2 = ESPUI.addControl( ControlType::Tab, "Settings", "Settings - Position" );
+  tab3 = ESPUI.addControl( ControlType::Tab, "Settings", "Settings - Speed" );
+  tab4 = ESPUI.addControl( ControlType::Tab, "Settings", "Settings - Times" );
+  tab5 = ESPUI.addControl( ControlType::Tab, "Settings", "Settings - Probability" );
 
 
   // shown above all tabs
@@ -832,6 +886,33 @@ void setup(void) {
   ESPUI.addControl( ControlType::Max, "Speed Thrust Out Max", String(vel_max), ControlColor::None, speedThrustOutMaxLabelId );
 
   // tab 4
+  timesPreptimeLabelId = ESPUI.addControl( ControlType::Number, "Prep Time", String(timesPreptime), ControlColor::Alizarin, tab4, &numberCall_timesPreptime );
+  ESPUI.addControl( ControlType::Min, "Prep Time", String(0), ControlColor::None, timesPreptimeLabelId );
+  ESPUI.addControl( ControlType::Max, "Prep Time", String(10), ControlColor::None, timesPreptimeLabelId );
+
+  timesPauseMinLabelId = ESPUI.addControl( ControlType::Number, "Pausetime Min", String(timesPauseMin), ControlColor::Alizarin, tab4, &numberCall_timesPauseMin );
+  ESPUI.addControl( ControlType::Min, "Pausetime Min", String(0), ControlColor::None, timesPauseMinLabelId );
+  ESPUI.addControl( ControlType::Max, "Pausetime Min", String(30), ControlColor::None, timesPauseMinLabelId );
+
+  timesHoldMinLabelId = ESPUI.addControl( ControlType::Number, "Hold Time Min", String(timesHoldMin), ControlColor::Alizarin, tab4, &numberCall_timesHoldMin );
+  ESPUI.addControl( ControlType::Min, "Hold Time Min", String(1), ControlColor::None, timesHoldMinLabelId );
+  ESPUI.addControl( ControlType::Max, "Hold Time Min", String(30), ControlColor::None, timesHoldMinLabelId );
+
+  timesThrustMinLabelId = ESPUI.addControl( ControlType::Number, "Thrust Amount Min", String(timesThrustMin), ControlColor::Alizarin, tab4, &numberCall_timesThrustMin );
+  ESPUI.addControl( ControlType::Min, "Thrust Amount Min", String(1), ControlColor::None, timesThrustMinLabelId );
+  ESPUI.addControl( ControlType::Max, "Thrust Amount Min", String(50), ControlColor::None, timesThrustMinLabelId );
+
+  timesPauseMaxLabelId = ESPUI.addControl( ControlType::Number, "Pausetime Max", String(timesPauseMax), ControlColor::Alizarin, tab4, &numberCall_timesPauseMax );
+  ESPUI.addControl( ControlType::Min, "Pausetime Max", String(0), ControlColor::None, timesPauseMaxLabelId );
+  ESPUI.addControl( ControlType::Max, "Pausetime Max", String(30), ControlColor::None, timesPauseMaxLabelId );
+
+  timesHoldMaxLabelId = ESPUI.addControl( ControlType::Number, "Hold Time Max", String(timesHoldMax), ControlColor::Alizarin, tab4, &numberCall_timesHoldMax );
+  ESPUI.addControl( ControlType::Min, "Hold Time Max", String(1), ControlColor::None, timesHoldMaxLabelId );
+  ESPUI.addControl( ControlType::Max, "Hold Time Max", String(30), ControlColor::None, timesHoldMaxLabelId );
+
+  timesThrustMaxLabelId = ESPUI.addControl( ControlType::Number, "Thrust Amount Max", String(timesThrustMax), ControlColor::Alizarin, tab4, &numberCall_timesThrustMax );
+  ESPUI.addControl( ControlType::Min, "Thrust Amount Max", String(1), ControlColor::None, timesThrustMaxLabelId );
+  ESPUI.addControl( ControlType::Max, "Thrust Amount Max", String(50), ControlColor::None, timesThrustMaxLabelId );
 
   // tab 5
   probabilityPauseLabelId = ESPUI.addControl( ControlType::Number, "Probability - Pause", String(prob_pause), ControlColor::Alizarin, tab5, &numberCall_probPause );
@@ -847,18 +928,18 @@ void setup(void) {
   ESPUI.addControl( ControlType::Max, "Probability - Hold", String(100), ControlColor::None, probabilityHoldLabelId );
   
 
-
+  ESPUI.jsonInitialDocumentSize = 16000; // Default is 8000. Thats not enough for this many widgeds
   ESPUI.begin("TaskHandler");
 }
 
 void loop(void) {
   if (flag_hold) {
     stepchain_busy = true;
-    stepchain(activecommand.cmd_preptime, activecommand.cmd_amount, -activecommand.cmd_posin * stepspermm, -activecommand.cmd_posout * stepspermm, activecommand.cmd_accin, activecommand.cmd_accout, activecommand.cmd_velin * stepspermm, activecommand.cmd_velout * stepspermm, activecommand.cmd_pausein, activecommand.cmd_pauseout);
+    stepchain(activecommand.cmd_preptime, activecommand.cmd_amount, -activecommand.cmd_posin * stepspermm, -activecommand.cmd_posout * stepspermm, activecommand.cmd_accin* stepspermm, activecommand.cmd_accout* stepspermm, activecommand.cmd_velin * stepspermm, activecommand.cmd_velout * stepspermm, activecommand.cmd_pausein, activecommand.cmd_pauseout);
   }
   if (flag_thrust) {
     stepchain_busy = true;
-    stepchain(activecommand.cmd_preptime, activecommand.cmd_amount, -activecommand.cmd_posin * stepspermm, -activecommand.cmd_posout * stepspermm, activecommand.cmd_accin, activecommand.cmd_accout, activecommand.cmd_velin * stepspermm, activecommand.cmd_velout * stepspermm, activecommand.cmd_pausein, activecommand.cmd_pauseout);
+    stepchain(activecommand.cmd_preptime, activecommand.cmd_amount, -activecommand.cmd_posin * stepspermm, -activecommand.cmd_posout * stepspermm, activecommand.cmd_accin * stepspermm, activecommand.cmd_accout* stepspermm, activecommand.cmd_velin * stepspermm, activecommand.cmd_velout * stepspermm, activecommand.cmd_pausein, activecommand.cmd_pauseout);
   }
   if (flag_paus) {
     stepchain_busy = true;
