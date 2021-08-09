@@ -7,6 +7,7 @@ This is my first "ok"-working sketch for the OSSM from Kinkymakers.
 It provides:
 - A WebServer for the controlls
 - Inputs for speed, acceleration and distance
+- Input for Wait-Times (Inside/Outside)
 - BPM indicator
 - Torque dis/enable!
 
