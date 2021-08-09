@@ -1,6 +1,6 @@
 # OSSM
 
-## ESP
+## GUI_OSSM_01
 
 This is my first "ok"-working sketch for the OSSM from Kinkymakers.
 
@@ -12,7 +12,7 @@ It provides:
 
 
 
-## TaskRandomizer
+## GUI_TaskRandomizer_02
 
 This is a first Sketch for a Blowjob/Throat-Trainer on the OSSM.
 It will fire Thrusts, Holds and Pauses at you.
