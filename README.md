@@ -26,7 +26,3 @@ It provides:
 This is a first Sketch for a Blowjob/Throat-Trainer on the OSSM.
 It will fire Thrusts, Holds and Pauses at you.
 You can adjust the Positions according to your needs in the GUI.
-
-
-
-I want to thank Emma for the implementation of the fastaccelstepper library
