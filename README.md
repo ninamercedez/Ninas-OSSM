@@ -10,6 +10,9 @@ It provides:
 - BPM indicator
 - Torque dis/enable!
 
+![grafik](https://user-images.githubusercontent.com/82914483/128709424-b75aa553-e57b-44fa-990c-eb7ca740e040.png)
+
+
 
 
 ## GUI_TaskRandomizer_02
