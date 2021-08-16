@@ -2,8 +2,8 @@
 void stepchain(int _preptime = 0, int _amount = 1, int _posIn = 0, int _posOut = 0, int _accIn = 0, int _accOut = 0, int _velIn = 0,  int _velOut = 0,  int _pauseIn = 0, int _pauseOut = 0);
 
 //#############################################################################
-#define SECRET_SSID "YOUR_SSID"
-#define SECRET_PASS "YOUR_PW"
+#define SECRET_SSID "..."
+#define SECRET_PASS "..."
 
 #define pinPul 16
 #define pinDir 17
@@ -15,6 +15,7 @@ void stepchain(int _preptime = 0, int _amount = 1, int _posIn = 0, int _posOut =
 #define acc_min 100
 #define acc_max 5000
 const bool reverseStepper = false;
+const bool speedwithsliders = true;
 
 //#############################################################################
 
@@ -42,11 +43,14 @@ const char *ssid = SECRET_SSID;
 const char *password = SECRET_PASS;
 
 // Global Variables - GUI
-int BPMLabelId;
+uint16_t BPMLabelId;
+uint16_t StatusLabelId;
 float bpm;
 unsigned long timestamp_stpchain_start;
 unsigned long timestamp_stpchain_stop;
 unsigned long millispased;
+
+uint16_t button1;
 
 uint16_t tab1;
 uint16_t tab2;
@@ -75,8 +79,8 @@ int speedThrustIn = 150;
 int speedThrustOut = 150;
 
 // Global Variables - Acc
-int accThrustIn = 2000;
-int accThrustOut = 2000;
+int accThrustIn = 5000;
+int accThrustOut = 5000;
 
 // Global Variables - Times
 int timesPauseIn = 0;
@@ -158,12 +162,22 @@ void numberCall_posOut( Control* sender, int type ) {
 //ESP Callbacks - Settings - Speed
 void numberCall_speedThrustIn( Control* sender, int type ) {
   Serial.print("speedThrustIn: "); Serial.println( sender->value );
-  speedThrustIn = (sender->value).toInt();
+  if (speedwithsliders){
+    speedThrustIn = map(sender->value.toInt(), 0, 100, vel_min, vel_max);
+  }
+  else {
+    speedThrustIn = (sender->value).toInt();
+  }
 }
 
 void numberCall_speedThrustOut( Control* sender, int type ) {
   Serial.print("speedThrustOut: "); Serial.println( sender->value );
-  speedThrustOut = (sender->value).toInt();
+  if (speedwithsliders){
+    speedThrustOut = map(sender->value.toInt(), 0, 100, vel_min, vel_max);
+  }
+  else {
+    speedThrustOut = (sender->value).toInt();
+  }
 }
 
 //#############################################################################
@@ -193,9 +207,7 @@ void numberCall_timesPauseIn( Control* sender, int type ) {
 //#############################################################################
 //Functions for this Sketch
 void start() {
-  digitalWrite(pinEnb, LOW);
   flag_statuson = true;
-  //tasknumber = 1;
 }
 
 void stopp() {
@@ -431,14 +443,14 @@ void setup(void) {
   tab4 = ESPUI.addControl( ControlType::Tab, "Settings", "Settings - Acceleration" );
   tab5 = ESPUI.addControl( ControlType::Tab, "Settings", "Settings - Times" );
 
-
   // shown above all tabs
-  ESPUI.addControl( ControlType::Button, "Start", "Start", ControlColor::Sunflower, tab1, &button_start );
-  ESPUI.addControl( ControlType::Button, "Stop", "Stop", ControlColor::Sunflower, tab1, &button_stop );
-  ESPUI.addControl( ControlType::Switcher, "Torque", "", ControlColor::Sunflower, tab1,  &switch_torque );
+  BPMLabelId = ESPUI.label("BPM:", ControlColor::Sunflower, "-");
+  ESPUI.button("Start", &button_start, ControlColor::Sunflower, "Start");
+  ESPUI.button("Stop", &button_stop, ControlColor::Sunflower, "Stop");
   
   // tab 1
-  BPMLabelId = ESPUI.addControl( ControlType::Label, "BPM", "-", ControlColor::Emerald, tab1 );
+  StatusLabelId = ESPUI.addControl( ControlType::Label, "Status", "-", ControlColor::Alizarin, tab1 );
+  ESPUI.addControl( ControlType::Switcher, "Torque", "", ControlColor::Alizarin, tab1, &switch_torque );
 
   // tab 2
   posInLabelId = ESPUI.addControl( ControlType::Number, "Position In", String(posIn), ControlColor::Alizarin, tab2, &numberCall_posIn );
@@ -450,14 +462,19 @@ void setup(void) {
   ESPUI.addControl( ControlType::Max, "Position Out", String(dist_max), ControlColor::None, posOutLabelId );
 
   // tab 3
-  speedThrustInLabelId = ESPUI.addControl( ControlType::Number, "Speed Thrust In", String(speedThrustIn), ControlColor::Alizarin, tab3, &numberCall_speedThrustIn );
-  ESPUI.addControl( ControlType::Min, "Speed Thrust In", String(vel_min), ControlColor::None, speedThrustInLabelId );
-  ESPUI.addControl( ControlType::Max, "Speed Thrust In", String(vel_max), ControlColor::None, speedThrustInLabelId );
-
-  speedThrustOutLabelId = ESPUI.addControl( ControlType::Number, "Speed Thrust Out", String(speedThrustOut), ControlColor::Alizarin, tab3, &numberCall_speedThrustOut );
-  ESPUI.addControl( ControlType::Min, "Speed Thrust Out", String(vel_min), ControlColor::None, speedThrustOutLabelId );
-  ESPUI.addControl( ControlType::Max, "Speed Thrust Out", String(vel_max), ControlColor::None, speedThrustOutLabelId );
-
+  if (speedwithsliders) {
+    ESPUI.addControl( ControlType::Slider, "Speed Thrust In", "10", ControlColor::Alizarin, tab3, &numberCall_speedThrustIn );
+    ESPUI.addControl( ControlType::Slider, "Speed Thrust Out", "10", ControlColor::Alizarin, tab3, &numberCall_speedThrustOut );
+  }
+  else{
+    speedThrustInLabelId = ESPUI.addControl( ControlType::Number, "Speed Thrust In", String(speedThrustIn), ControlColor::Alizarin, tab3, &numberCall_speedThrustIn );
+    ESPUI.addControl( ControlType::Min, "Speed Thrust In", String(vel_min), ControlColor::None, speedThrustInLabelId );
+    ESPUI.addControl( ControlType::Max, "Speed Thrust In", String(vel_max), ControlColor::None, speedThrustInLabelId );
+  
+    speedThrustOutLabelId = ESPUI.addControl( ControlType::Number, "Speed Thrust Out", String(speedThrustOut), ControlColor::Alizarin, tab3, &numberCall_speedThrustOut );
+    ESPUI.addControl( ControlType::Min, "Speed Thrust Out", String(vel_min), ControlColor::None, speedThrustOutLabelId );
+    ESPUI.addControl( ControlType::Max, "Speed Thrust Out", String(vel_max), ControlColor::None, speedThrustOutLabelId );
+  }
   // tab 4
   accThrustInLabelId = ESPUI.addControl( ControlType::Number, "Acceleration Thrust In", String(accThrustIn), ControlColor::Alizarin, tab4, &numberCall_accThrustIn );
   ESPUI.addControl( ControlType::Min, "Acceleration Thrust In", String(acc_min), ControlColor::None, accThrustInLabelId );
@@ -475,20 +492,9 @@ void setup(void) {
   timesPauseOutLabelId = ESPUI.addControl( ControlType::Number, "Wait Outside", String(timesPauseOut), ControlColor::Alizarin, tab5, &numberCall_timesPauseOut );
   ESPUI.addControl( ControlType::Min, "Wait Outside", String(0), ControlColor::None, timesPauseOutLabelId );
   ESPUI.addControl( ControlType::Max, "Wait Outside", String(30), ControlColor::None, timesPauseOutLabelId );
-  /*
-  probabilityPauseLabelId = ESPUI.addControl( ControlType::Number, "Probability - Pause", String(prob_pause), ControlColor::Alizarin, tab5, &numberCall_probPause );
-  ESPUI.addControl( ControlType::Min, "Probability - Pause", String(0), ControlColor::None, probabilityPauseLabelId );
-  ESPUI.addControl( ControlType::Max, "Probability - Pause", String(100), ControlColor::None, probabilityPauseLabelId );
 
-  probabilityHeavyLabelId = ESPUI.addControl( ControlType::Number, "Probability - Heavy Task", String(prob_heavytask), ControlColor::Alizarin, tab5, &numberCall_probHeavy );
-  ESPUI.addControl( ControlType::Min, "Probability - Heavy Task", String(0), ControlColor::None, probabilityHeavyLabelId );
-  ESPUI.addControl( ControlType::Max, "Probability - Heavy Task", String(100), ControlColor::None, probabilityHeavyLabelId );
-
-  probabilityHoldLabelId = ESPUI.addControl( ControlType::Number, "Probability - Hold", String(prob_hold), ControlColor::Alizarin, tab5, &numberCall_probHold );
-  ESPUI.addControl( ControlType::Min, "Probability - Hold", String(0), ControlColor::None, probabilityHoldLabelId );
-  ESPUI.addControl( ControlType::Max, "Probability - Hold", String(100), ControlColor::None, probabilityHoldLabelId );
-  */
-
+  // I dont think its a good idea to enable this...
+  //ESPUI.sliderContinuous = true;
   ESPUI.jsonInitialDocumentSize = 16000; // Default is 8000. Thats not enough for this many widgeds
   ESPUI.begin("OSSM");
 }
