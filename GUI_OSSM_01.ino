@@ -10,12 +10,11 @@ void stepchain(int _preptime = 0, int _amount = 1, int _posIn = 0, int _posOut =
 #define pinEnb 21
 #define stepspermm 20
 #define dist_max 150
-#define vel_min 1
+#define vel_min 10
 #define vel_max 600
 #define acc_min 100
 #define acc_max 5000
 const bool reverseStepper = false;
-const bool speedwithsliders = true;
 
 //#############################################################################
 
@@ -57,12 +56,19 @@ uint16_t tab2;
 uint16_t tab3;
 uint16_t tab4;
 uint16_t tab5;
+uint16_t tab6;
 
-uint16_t posInLabelId;
-uint16_t posOutLabelId;
+uint16_t posInNumberLabelId;
+uint16_t posOutNumberLabelId;
+uint16_t posInSliderLabelId;
+uint16_t posOutSliderLabelId;
 
-uint16_t speedThrustInLabelId;
-uint16_t speedThrustOutLabelId;
+uint16_t speedThrustInNumberLabelId;
+uint16_t speedThrustOutNumberLabelId;
+uint16_t speedThrustInSliderLabelId;
+uint16_t speedThrustOutSliderLabelId;
+uint16_t syncSpeedLabelId;
+
 uint16_t accThrustInLabelId;
 uint16_t accThrustOutLabelId;
 
@@ -89,6 +95,9 @@ int timesPauseOut = 0;
 // Global Variables - Flags
 bool flag_statuson = false;
 bool flag_torque = false;
+bool flag_syncspeed = false;
+bool flag_speedwithsliders = false;
+bool flag_positionwithsliders = false;
 
 // Global Variables - Stepchain
 bool stepchain_busy = false;
@@ -150,19 +159,29 @@ void switch_torque(Control *sender, int value) {
 //ESP Callbacks - Settings - Position
 void numberCall_posIn( Control* sender, int type ) {
   Serial.print("posIn: "); Serial.println( sender->value );
-  posIn = (sender->value).toInt();
+  if (flag_positionwithsliders){
+    posIn = map(sender->value.toInt(), 0, 100, 0, dist_max);
+  }
+  else {
+    posIn = (sender->value).toInt();
+  }
 }
 
 void numberCall_posOut( Control* sender, int type ) {
   Serial.print("posOut: "); Serial.println( sender->value );
-  posOut = (sender->value).toInt();
+  if (flag_positionwithsliders){
+    posOut = map(sender->value.toInt(), 0, 100, 0, dist_max);
+  }
+  else {
+    posOut = (sender->value).toInt();
+  }
 }
 
 //#############################################################################
 //ESP Callbacks - Settings - Speed
 void numberCall_speedThrustIn( Control* sender, int type ) {
   Serial.print("speedThrustIn: "); Serial.println( sender->value );
-  if (speedwithsliders){
+  if (flag_speedwithsliders){
     speedThrustIn = map(sender->value.toInt(), 0, 100, vel_min, vel_max);
   }
   else {
@@ -172,12 +191,29 @@ void numberCall_speedThrustIn( Control* sender, int type ) {
 
 void numberCall_speedThrustOut( Control* sender, int type ) {
   Serial.print("speedThrustOut: "); Serial.println( sender->value );
-  if (speedwithsliders){
+  if (flag_speedwithsliders){
     speedThrustOut = map(sender->value.toInt(), 0, 100, vel_min, vel_max);
   }
   else {
     speedThrustOut = (sender->value).toInt();
   }
+}
+
+void switch_syncspeed(Control *sender, int value) {
+  switch (value) {
+  case S_ACTIVE:
+    Serial.print("Active:");
+    flag_syncspeed = true;
+    break;
+
+  case S_INACTIVE:
+    Serial.print("Inactive");
+    flag_syncspeed = false;
+    break;
+  }
+
+  Serial.print(" ");
+  Serial.println(sender->id);
 }
 
 //#############################################################################
@@ -203,6 +239,70 @@ void numberCall_timesPauseIn( Control* sender, int type ) {
   Serial.print("timesPauseIn: "); Serial.println( sender->value );
   timesPauseIn = (sender->value).toInt();
 }
+
+//#############################################################################
+//ESP Callbacks - Settings - Settings
+void switch_slidersspeed(Control *sender, int value) {
+  switch (value) {
+  case S_ACTIVE:
+    Serial.print("Active:");
+    flag_speedwithsliders = true;    
+    ESPUI.removeControl(syncSpeedLabelId, false);
+    speedThrustInSliderLabelId = ESPUI.addControl( ControlType::Slider, "Speed Thrust In", String(map(speedThrustIn, vel_min, vel_max, 0, 100)), ControlColor::Alizarin, tab3, &numberCall_speedThrustIn );
+    speedThrustOutSliderLabelId = ESPUI.addControl( ControlType::Slider, "Speed Thrust Out", String(map(speedThrustOut, vel_min, vel_max, 0, 100)), ControlColor::Alizarin, tab3, &numberCall_speedThrustOut );
+    syncSpeedLabelId = ESPUI.addControl( ControlType::Switcher, "Sync Speed", "", ControlColor::Alizarin, tab3, &switch_syncspeed );
+    ESPUI.removeControl(speedThrustOutNumberLabelId, false);
+    ESPUI.removeControl(speedThrustInNumberLabelId, true);
+    break;
+
+  case S_INACTIVE:
+    Serial.print("Inactive");
+    flag_speedwithsliders = false;
+    ESPUI.removeControl(syncSpeedLabelId, false);
+    speedThrustInNumberLabelId = ESPUI.addControl( ControlType::Number, "Speed Thrust In", String(speedThrustIn), ControlColor::Alizarin, tab3, &numberCall_speedThrustIn );
+    ESPUI.addControl( ControlType::Min, "Speed Thrust In", String(vel_min), ControlColor::None, speedThrustInNumberLabelId );
+    ESPUI.addControl( ControlType::Max, "Speed Thrust In", String(vel_max), ControlColor::None, speedThrustInNumberLabelId );
+    speedThrustOutNumberLabelId = ESPUI.addControl( ControlType::Number, "Speed Thrust Out", String(speedThrustOut), ControlColor::Alizarin, tab3, &numberCall_speedThrustOut );
+    ESPUI.addControl( ControlType::Min, "Speed Thrust Out", String(vel_min), ControlColor::None, speedThrustOutNumberLabelId );
+    ESPUI.addControl( ControlType::Max, "Speed Thrust Out", String(vel_max), ControlColor::None, speedThrustOutNumberLabelId ); 
+    syncSpeedLabelId = ESPUI.addControl( ControlType::Switcher, "Sync Speed", "", ControlColor::Alizarin, tab3, &switch_syncspeed );
+    ESPUI.removeControl(speedThrustOutSliderLabelId, false);
+    ESPUI.removeControl(speedThrustInSliderLabelId, true);
+    break;
+  }
+  Serial.print(" ");
+  Serial.println(sender->id);
+}
+
+void switch_slidersposition(Control *sender, int value) {
+  switch (value) {
+  case S_ACTIVE:
+    Serial.print("Active:");
+    flag_positionwithsliders = true;
+    posInSliderLabelId = ESPUI.addControl( ControlType::Slider, "Position In", String(map(posIn, 0, dist_max, 0, 100)), ControlColor::Alizarin, tab2, &numberCall_posIn );
+    posOutSliderLabelId = ESPUI.addControl( ControlType::Slider, "Position Out", String(map(posOut, 0, dist_max, 0, 100)), ControlColor::Alizarin, tab2, &numberCall_posOut );
+    ESPUI.removeControl(posInNumberLabelId, false);
+    ESPUI.removeControl(posOutNumberLabelId, true);
+    break;
+
+  case S_INACTIVE:
+    Serial.print("Inactive");
+    flag_positionwithsliders = false;
+    posInNumberLabelId = ESPUI.addControl( ControlType::Number, "Position In", String(posIn), ControlColor::Alizarin, tab2, &numberCall_posIn );
+    ESPUI.addControl( ControlType::Min, "Position In", String(0), ControlColor::None, posInNumberLabelId );
+    ESPUI.addControl( ControlType::Max, "Position In", String(dist_max), ControlColor::None, posInNumberLabelId );
+    posOutNumberLabelId = ESPUI.addControl( ControlType::Number, "Position Out", String(posOut), ControlColor::Alizarin, tab2, &numberCall_posOut );
+    ESPUI.addControl( ControlType::Min, "Position Out", String(0), ControlColor::None, posOutNumberLabelId );
+    ESPUI.addControl( ControlType::Max, "Position Out", String(dist_max), ControlColor::None, posOutNumberLabelId );
+    ESPUI.removeControl(posInSliderLabelId, false);
+    ESPUI.removeControl(posOutSliderLabelId, true);
+    break;
+  }
+
+  Serial.print(" ");
+  Serial.println(sender->id);
+}
+
 
 //#############################################################################
 //Functions for this Sketch
@@ -339,7 +439,12 @@ void stepchain(int _preptime, int _amount, int _posIn, int _posOut, int _accIn, 
       case 5: //Write Parameters for out
         Serial.print("Stepchain: "); Serial.println(stp);
         targetpos = _posOut;
-        stepper->setSpeedInHz(_velOut);
+        if (flag_syncspeed){
+          stepper->setSpeedInHz(_velIn);
+        }
+        else{
+          stepper->setSpeedInHz(_velOut);
+        }
         stepper->setAcceleration(_accOut);
         stepper->applySpeedAcceleration();
         stp = 6;
@@ -438,10 +543,11 @@ void setup(void) {
   ESPUI.setVerbosity(Verbosity::Quiet);
 
   tab1 = ESPUI.addControl( ControlType::Tab, "Status", "Status" );
-  tab2 = ESPUI.addControl( ControlType::Tab, "Settings", "Settings - Position" );
-  tab3 = ESPUI.addControl( ControlType::Tab, "Settings", "Settings - Speed" );
-  tab4 = ESPUI.addControl( ControlType::Tab, "Settings", "Settings - Acceleration" );
-  tab5 = ESPUI.addControl( ControlType::Tab, "Settings", "Settings - Times" );
+  tab2 = ESPUI.addControl( ControlType::Tab, "Settings", "Position" );
+  tab3 = ESPUI.addControl( ControlType::Tab, "Settings", "Speed" );
+  tab4 = ESPUI.addControl( ControlType::Tab, "Settings", "Acceleration" );
+  tab5 = ESPUI.addControl( ControlType::Tab, "Settings", "Times" );
+  tab6 = ESPUI.addControl( ControlType::Tab, "Settings", "Settings" );
 
   // shown above all tabs
   BPMLabelId = ESPUI.label("BPM:", ControlColor::Sunflower, "-");
@@ -453,28 +559,25 @@ void setup(void) {
   ESPUI.addControl( ControlType::Switcher, "Torque", "", ControlColor::Alizarin, tab1, &switch_torque );
 
   // tab 2
-  posInLabelId = ESPUI.addControl( ControlType::Number, "Position In", String(posIn), ControlColor::Alizarin, tab2, &numberCall_posIn );
-  ESPUI.addControl( ControlType::Min, "Position In", String(0), ControlColor::None, posInLabelId );
-  ESPUI.addControl( ControlType::Max, "Position In", String(dist_max), ControlColor::None, posInLabelId );
+  posInNumberLabelId = ESPUI.addControl( ControlType::Number, "Position In", String(posIn), ControlColor::Alizarin, tab2, &numberCall_posIn );
+  ESPUI.addControl( ControlType::Min, "Position In", String(0), ControlColor::None, posInNumberLabelId );
+  ESPUI.addControl( ControlType::Max, "Position In", String(dist_max), ControlColor::None, posInNumberLabelId );
 
-  posOutLabelId = ESPUI.addControl( ControlType::Number, "Position Out", String(posOut), ControlColor::Alizarin, tab2, &numberCall_posOut );
-  ESPUI.addControl( ControlType::Min, "Position Out", String(0), ControlColor::None, posOutLabelId );
-  ESPUI.addControl( ControlType::Max, "Position Out", String(dist_max), ControlColor::None, posOutLabelId );
+  posOutNumberLabelId = ESPUI.addControl( ControlType::Number, "Position Out", String(posOut), ControlColor::Alizarin, tab2, &numberCall_posOut );
+  ESPUI.addControl( ControlType::Min, "Position Out", String(0), ControlColor::None, posOutNumberLabelId );
+  ESPUI.addControl( ControlType::Max, "Position Out", String(dist_max), ControlColor::None, posOutNumberLabelId );
 
   // tab 3
-  if (speedwithsliders) {
-    ESPUI.addControl( ControlType::Slider, "Speed Thrust In", "10", ControlColor::Alizarin, tab3, &numberCall_speedThrustIn );
-    ESPUI.addControl( ControlType::Slider, "Speed Thrust Out", "10", ControlColor::Alizarin, tab3, &numberCall_speedThrustOut );
-  }
-  else{
-    speedThrustInLabelId = ESPUI.addControl( ControlType::Number, "Speed Thrust In", String(speedThrustIn), ControlColor::Alizarin, tab3, &numberCall_speedThrustIn );
-    ESPUI.addControl( ControlType::Min, "Speed Thrust In", String(vel_min), ControlColor::None, speedThrustInLabelId );
-    ESPUI.addControl( ControlType::Max, "Speed Thrust In", String(vel_max), ControlColor::None, speedThrustInLabelId );
+  speedThrustInNumberLabelId = ESPUI.addControl( ControlType::Number, "Speed Thrust In", String(speedThrustIn), ControlColor::Alizarin, tab3, &numberCall_speedThrustIn );
+  ESPUI.addControl( ControlType::Min, "Speed Thrust In", String(vel_min), ControlColor::None, speedThrustInNumberLabelId );
+  ESPUI.addControl( ControlType::Max, "Speed Thrust In", String(vel_max), ControlColor::None, speedThrustInNumberLabelId );
+
+  speedThrustOutNumberLabelId = ESPUI.addControl( ControlType::Number, "Speed Thrust Out", String(speedThrustOut), ControlColor::Alizarin, tab3, &numberCall_speedThrustOut );
+  ESPUI.addControl( ControlType::Min, "Speed Thrust Out", String(vel_min), ControlColor::None, speedThrustOutNumberLabelId );
+  ESPUI.addControl( ControlType::Max, "Speed Thrust Out", String(vel_max), ControlColor::None, speedThrustOutNumberLabelId ); 
   
-    speedThrustOutLabelId = ESPUI.addControl( ControlType::Number, "Speed Thrust Out", String(speedThrustOut), ControlColor::Alizarin, tab3, &numberCall_speedThrustOut );
-    ESPUI.addControl( ControlType::Min, "Speed Thrust Out", String(vel_min), ControlColor::None, speedThrustOutLabelId );
-    ESPUI.addControl( ControlType::Max, "Speed Thrust Out", String(vel_max), ControlColor::None, speedThrustOutLabelId );
-  }
+  syncSpeedLabelId = ESPUI.addControl( ControlType::Switcher, "Sync Speed", "", ControlColor::Alizarin, tab3, &switch_syncspeed );   
+  
   // tab 4
   accThrustInLabelId = ESPUI.addControl( ControlType::Number, "Acceleration Thrust In", String(accThrustIn), ControlColor::Alizarin, tab4, &numberCall_accThrustIn );
   ESPUI.addControl( ControlType::Min, "Acceleration Thrust In", String(acc_min), ControlColor::None, accThrustInLabelId );
@@ -492,6 +595,10 @@ void setup(void) {
   timesPauseOutLabelId = ESPUI.addControl( ControlType::Number, "Wait Outside", String(timesPauseOut), ControlColor::Alizarin, tab5, &numberCall_timesPauseOut );
   ESPUI.addControl( ControlType::Min, "Wait Outside", String(0), ControlColor::None, timesPauseOutLabelId );
   ESPUI.addControl( ControlType::Max, "Wait Outside", String(30), ControlColor::None, timesPauseOutLabelId );
+
+  // tab 6
+  ESPUI.addControl( ControlType::Switcher, "Sliders for Speed", "", ControlColor::Alizarin, tab6, &switch_slidersspeed );
+  ESPUI.addControl( ControlType::Switcher, "Sliders for Position", "", ControlColor::Alizarin, tab6, &switch_slidersposition );
 
   // I dont think its a good idea to enable this...
   //ESPUI.sliderContinuous = true;
